@@ -31,10 +31,14 @@ except Exception as e:
     print("Could not load anthropic API key claude_api_key.txt.")
     
 try:
-    import openai
+    # import openai
     # setup OpenAI API key
-    openai.api_key = "FILL IN YOUR KEY HERE."
-    os.environ["OPENAI_API_KEY"] = openai.api_key 
+    # openai.api_key = 
+    from openai import OpenAI
+    os.environ["OPENAI_API_KEY"] = "sk-***"
+    os.environ["OPENAI_BASE_URL"] = "https://api.yesapikey.com/v1"
+    # from openai import OpenAI
+    client = OpenAI()
 except Exception as e:
     print(e)
     print("Could not load OpenAI API key openai_api_key.txt.")
@@ -144,8 +148,10 @@ def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_t
     """ Call the OpenAI API to complete a prompt."""
     raw_request = {
           "model": model,
-          "temperature": temperature,
-          "max_tokens": max_tokens_to_sample,
+        #   "prompt":prompt,
+        #   "role":"user",
+        #   "temperature": temperature,
+        #   "max_tokens": max_tokens_to_sample,
           "stop": stop_sequences or None,  # API doesn't like empty list
           **kwargs
     }
@@ -155,9 +161,17 @@ def complete_text_openai(prompt, stop_sequences=[], model="gpt-3.5-turbo", max_t
     while iteration < 10:
         try:
             if model.startswith("gpt-3.5") or model.startswith("gpt-4"):
-                messages = [{"role": "user", "content": prompt}]
-                response = openai.ChatCompletion.create(**{"messages": messages,**raw_request})
-                completion = response["choices"][0]["message"]["content"]
+                # messages = [{"role": "user", "content": prompt}]
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": prompt}
+                ]
+                # TODO migrate old version to new openai api
+                # response = openai.ChatCompletion.create(**{"messages": messages,**raw_request})
+                # completion = response["choices"][0]["message"]["content"]
+                response = client.chat.completions.create(**{"messages": messages,**raw_request})
+                completion = response.choices[0].message.content
+                print(completion)
             else:
                 response = openai.Completion.create(**{"prompt": prompt,**raw_request})
                 completion = response["choices"][0]["text"]
